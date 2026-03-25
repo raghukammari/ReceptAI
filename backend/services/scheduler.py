@@ -31,24 +31,26 @@ async def fire_reminders():
         result = await db.execute(
             select(AppointmentRecord)
             .where(AppointmentRecord.status == AppointmentStatus.ACTIVE)
-            .where(AppointmentRecord.start_time >= now)
+            .where(AppointmentRecord.start_time >= now.replace(tzinfo=None))
         )
         appointments = result.scalars().all()
 
         for appt in appointments:
-            appt_utc = appt.start_time.replace(tzinfo=timezone.utc)
+            # Make naive datetime timezone-aware for comparison
+            if appt.start_time.tzinfo is None:
+                appt_utc = appt.start_time.replace(tzinfo=timezone.utc)
+            else:
+                appt_utc = appt.start_time.astimezone(timezone.utc)
 
             # 24h reminder
             if window_24h_start <= appt_utc <= window_24h_end and not appt.reminder_24h_sent:
-                logger.info(f"Firing 24h reminder → {appt.customer_name} ({appt.start_time})")
+                logger.info(f"Firing 24h reminder → {appt.customer_name}")
                 try:
-                    # Get tenant vertical
                     t_result = await db.execute(
                         select(Tenant).where(Tenant.id == appt.tenant_id)
                     )
                     tenant = t_result.scalar_one_or_none()
                     vertical_key = tenant.vertical if tenant else "generic"
-
                     await send_reminder_24h(
                         phone=appt.customer_phone,
                         email=appt.customer_email,
@@ -60,19 +62,18 @@ async def fire_reminders():
                     appt.reminder_24h_sent = True
                     await db.commit()
                 except Exception as e:
-                    logger.error(f"24h reminder failed for {appt.id}: {e}")
+                    logger.error(f"24h reminder failed: {e}")
 
             # 1h reminder
             if window_1h_start <= appt_utc <= window_1h_end and not appt.reminder_1h_sent:
-                logger.info(f"Firing 1h reminder → {appt.customer_name} ({appt.start_time})")
+                logger.info(f"Firing 1h reminder → {appt.customer_name}")
                 try:
                     t_result = await db.execute(
                         select(Tenant).where(Tenant.id == appt.tenant_id)
                     )
                     tenant = t_result.scalar_one_or_none()
                     vertical_key = tenant.vertical if tenant else "generic"
-
-                    time_str = appt.start_time.astimezone().strftime("%-I:%M %p")
+                    time_str = appt.start_time.strftime("%-I:%M %p")
                     await send_reminder_1h(
                         phone=appt.customer_phone,
                         name=appt.customer_name,
@@ -82,7 +83,7 @@ async def fire_reminders():
                     appt.reminder_1h_sent = True
                     await db.commit()
                 except Exception as e:
-                    logger.error(f"1h reminder failed for {appt.id}: {e}")
+                    logger.error(f"1h reminder failed: {e}")
 
 
 def start_scheduler():
