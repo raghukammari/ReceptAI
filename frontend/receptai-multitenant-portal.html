@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ReceptAI — Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #07090f;
+  --surface:  #0e1118;
+  --surface2: #151923;
+  --surface3: #1b2130;
+  --border:   rgba(255,255,255,0.06);
+  --border2:  rgba(255,255,255,0.11);
+  --text:     #dde2f0;
+  --muted:    #68708a;
+  --dim:      #3a4156;
+  --accent:   #5b8dee;
+  --accent2:  #7c6ff7;
+  --green:    #3ecf8e;
+  --amber:    #f5a623;
+  --red:      #e05252;
+  --teal:     #2dd4c0;
+  --r:        10px;
+  --rsm:      6px;
+  --font:     'Sora', sans-serif;
+  --mono:     'JetBrains Mono', monospace;
+  --sidebar:  200px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;overflow:hidden}
+
+/* ── Screen router ── */
+.screen{display:none;height:100vh}
+.screen.active{display:flex}
+
+/* ═══════════════════════════════════════════
+   LOGIN SCREEN
+═══════════════════════════════════════════ */
+#screen-login{
+  align-items:center;justify-content:center;
+  background:var(--bg);
+  position:relative;overflow:hidden;
+}
+.login-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 30%, rgba(91,141,238,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 80% 70%, rgba(124,111,247,0.07) 0%, transparent 60%);
+  pointer-events:none;
+}
+.login-box{
+  width:400px;background:var(--surface);
+  border:1px solid var(--border2);border-radius:16px;
+  padding:36px 36px 32px;position:relative;z-index:1;
+}
+.login-logo{
+  display:flex;align-items:center;gap:10px;margin-bottom:28px;
+}
+.login-logo-mark{
+  width:38px;height:38px;border-radius:10px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.login-logo-text{font-size:17px;font-weight:700;letter-spacing:-.02em}
+.login-logo-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.login-title{font-size:20px;font-weight:600;margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+.demo-accounts{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--rsm);padding:12px 14px;margin-bottom:20px;
+}
+.demo-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px}
+.demo-btn{
+  display:flex;align-items:center;gap:8px;
+  width:100%;padding:8px 10px;border-radius:var(--rsm);
+  border:1px solid transparent;background:transparent;
+  color:var(--text);font-family:var(--font);font-size:12px;
+  cursor:pointer;transition:all .12s;text-align:left;margin-bottom:4px;
+}
+.demo-btn:last-child{margin-bottom:0}
+.demo-btn:hover{background:var(--surface3);border-color:var(--border2)}
+.demo-pill{
+  font-size:9px;font-weight:600;padding:2px 7px;border-radius:20px;margin-left:auto;
+}
+.pill-sa{background:rgba(91,141,238,.15);color:var(--accent)}
+.pill-bo{background:rgba(62,207,142,.15);color:var(--green)}
+.pill-st{background:rgba(245,166,35,.15);color:var(--amber)}
+.form-field{margin-bottom:14px}
+.form-field label{display:block;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;margin-bottom:5px}
+.form-field input{
+  width:100%;background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--rsm);color:var(--text);font-family:var(--font);
+  font-size:13px;padding:9px 11px;transition:border-color .15s;
+}
+.form-field input:focus{outline:none;border-color:var(--accent)}
+.login-btn{
+  width:100%;padding:10px;background:var(--accent);border:none;border-radius:var(--rsm);
+  color:#fff;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;
+  transition:opacity .12s;margin-top:4px;
+}
+.login-btn:hover{opacity:.88}
+.login-error{color:var(--red);font-size:12px;margin-top:10px;display:none}
+
+/* ═══════════════════════════════════════════
+   APP SHELL (shared)
+═══════════════════════════════════════════ */
+#screen-app{flex-direction:row}
+.sidebar{
+  width:var(--sidebar);background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;
+}
+.sb-head{padding:18px 14px 14px}
+.sb-brand{display:flex;align-items:center;gap:8px;margin-bottom:18px}
+.sb-mark{
+  width:30px;height:30px;border-radius:7px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;
+}
+.sb-brand-name{font-size:13px;font-weight:700;letter-spacing:-.01em}
+.sb-brand-tag{font-size:9px;color:var(--muted);margin-top:1px}
+
+/* Tenant pill (shown for super admin) */
+.tenant-pill{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--rsm);padding:7px 10px;
+  display:flex;align-items:center;gap:7px;
+  font-size:12px;margin-bottom:4px;cursor:pointer;
+  transition:border-color .12s;
+}
+.tenant-pill:hover{border-color:var(--border2)}
+.tenant-emoji{font-size:14px}
+.tenant-name-text{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px}
+.tenant-change{font-size:10px;color:var(--accent);flex-shrink:0}
+
+.nav-group{padding:6px 8px 2px}
+.nav-group-label{font-size:9px;font-weight:700;color:var(--dim);letter-spacing:.09em;text-transform:uppercase;padding:0 6px;margin-bottom:4px}
+.nav-item{
+  display:flex;align-items:center;gap:8px;
+  width:100%;padding:7px 8px;border-radius:var(--rsm);
+  border:none;background:transparent;color:var(--muted);
+  font-family:var(--font);font-size:12px;font-weight:500;
+  cursor:pointer;transition:all .12s;text-align:left;
+}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(91,141,238,.1);color:var(--accent)}
+.nav-icon{font-size:13px;width:16px;text-align:center;flex-shrink:0}
+.nav-badge{
+  margin-left:auto;font-size:9px;font-weight:700;
+  background:rgba(91,141,238,.2);color:var(--accent);
+  padding:1px 5px;border-radius:10px;
+}
+.nav-live{background:rgba(62,207,142,.2);color:var(--green)}
+
+.sb-foot{
+  margin-top:auto;padding:12px 14px;
+  border-top:1px solid var(--border);
+}
+.user-chip{
+  display:flex;align-items:center;gap:8px;cursor:pointer;
+}
+.user-avatar{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;flex-shrink:0;
+}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:11px;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.user-role-label{font-size:9px;color:var(--muted)}
+.logout-btn{
+  background:none;border:none;color:var(--muted);
+  font-size:11px;cursor:pointer;padding:3px 0;margin-top:8px;
+  font-family:var(--font);
+}
+.logout-btn:hover{color:var(--red)}
+
+/* Main */
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;border-bottom:1px solid var(--border);
+  background:var(--bg);flex-shrink:0;
+}
+.topbar-left .page-title{font-size:17px;font-weight:600}
+.topbar-left .page-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.content-area{flex:1;overflow-y:auto;padding:22px 24px}
+
+/* Panels */
+.panel{display:none}
+.panel.active{display:block}
+
+/* ── Common components ── */
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.metric-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:14px 16px;
+}
+.metric-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
+.metric-val{font-size:24px;font-weight:600;line-height:1}
+.metric-sub{font-size:10px;color:var(--muted);margin-top:5px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:14px}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.card-title{font-size:13px;font-weight:600}
+.card-sub{font-size:11px;color:var(--muted);margin-top:1px}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px;border-radius:var(--rsm);
+  border:1px solid var(--border2);background:var(--surface2);
+  color:var(--text);font-family:var(--font);font-size:12px;font-weight:500;
+  cursor:pointer;transition:all .12s;white-space:nowrap;
+}
+.btn:hover{background:var(--surface3)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{opacity:.88}
+.btn-danger{background:rgba(224,82,82,.1);border-color:rgba(224,82,82,.3);color:var(--red)}
+.btn-danger:hover{background:rgba(224,82,82,.18)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn-ghost:hover{background:var(--surface2);color:var(--text)}
+.btn-sm{padding:4px 9px;font-size:11px}
+.btn-xs{padding:3px 7px;font-size:10px}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600}
+.b-green{background:rgba(62,207,142,.12);color:var(--green)}
+.b-amber{background:rgba(245,166,35,.12);color:var(--amber)}
+.b-red{background:rgba(224,82,82,.12);color:var(--red)}
+.b-blue{background:rgba(91,141,238,.12);color:var(--accent)}
+.b-purple{background:rgba(124,111,247,.12);color:var(--accent2)}
+.b-gray{background:rgba(255,255,255,.05);color:var(--muted)}
+.b-teal{background:rgba(45,212,192,.12);color:var(--teal)}
+.b-live{background:rgba(62,207,142,.12);color:var(--green);animation:bpulse 2s infinite}
+@keyframes bpulse{0%,100%{opacity:1}50%{opacity:.55}}
+
+/* Table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;border-bottom:1px solid var(--border);text-align:left}
+tbody td{padding:11px 10px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(255,255,255,.015)}
+
+/* Form */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fgroup{display:flex;flex-direction:column;gap:4px}
+.fgroup label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.04em}
+.fcontrol{
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--rsm);color:var(--text);font-family:var(--font);
+  font-size:12px;padding:7px 9px;transition:border-color .15s;
+}
+.fcontrol:focus{outline:none;border-color:var(--accent)}
+select.fcontrol{cursor:pointer}
+select.fcontrol option{background:var(--surface2)}
+textarea.fcontrol{resize:vertical;min-height:70px;line-height:1.6}
+
+/* Toggle */
+.tog-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.tog-row:last-child{border-bottom:none;padding-bottom:0}
+.tog-title{font-size:12px;font-weight:500}
+.tog-desc{font-size:10px;color:var(--muted);margin-top:2px}
+.sw{position:relative;width:34px;height:19px;flex-shrink:0}
+.sw input{display:none}
+.sw-track{position:absolute;inset:0;background:var(--surface3);border:1px solid var(--dim);border-radius:19px;cursor:pointer;transition:.2s}
+.sw-track:before{content:'';position:absolute;width:13px;height:13px;left:2px;top:2px;background:var(--dim);border-radius:50%;transition:.2s}
+.sw input:checked+.sw-track{background:var(--accent);border-color:var(--accent)}
+.sw input:checked+.sw-track:before{transform:translateX(15px);background:#fff}
+
+/* Tenant card (super admin grid) */
+.tenant-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.t-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:14px 16px;cursor:pointer;
+  transition:border-color .12s,transform .12s;position:relative;
+}
+.t-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.t-card.suspended{opacity:.5}
+.t-card-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.t-emoji{font-size:22px;width:38px;height:38px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.t-name{font-size:13px;font-weight:600;margin-bottom:2px}
+.t-slug{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.t-stats{display:flex;gap:6px;flex-wrap:wrap}
+.t-stat{font-size:10px;color:var(--muted)}
+.t-stat span{color:var(--text);font-weight:500}
+.t-actions{display:flex;gap:6px;margin-top:10px}
+
+/* Role chip */
+.role-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;
+}
+.role-sa{background:rgba(91,141,238,.15);color:var(--accent)}
+.role-bo{background:rgba(62,207,142,.15);color:var(--green)}
+.role-st{background:rgba(245,166,35,.15);color:var(--amber)}
+
+/* Modal */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.7);z-index:100;
+  align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:14px;padding:24px 26px;width:480px;max-height:80vh;
+  overflow-y:auto;position:relative;
+}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+.modal-close{
+  position:absolute;top:16px;right:16px;
+  background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;
+}
+.modal-close:hover{color:var(--text)}
+
+/* Divider */
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* Access badge row */
+.access-row{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;background:var(--surface2);
+  border-radius:var(--rsm);margin-bottom:6px;
+}
+.access-icon{font-size:13px;width:18px;text-align:center}
+.access-label{flex:1;font-size:12px}
+.access-check{font-size:13px;color:var(--green)}
+.access-cross{font-size:13px;color:var(--dim)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* Waveform */
+.wave{display:inline-flex;align-items:center;gap:1.5px;height:12px}
+.wb{width:2px;background:var(--green);border-radius:1px;animation:wv .7s ease-in-out infinite alternate}
+@keyframes wv{from{height:2px}to{height:12px}}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:20px;right:20px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--rsm);padding:10px 14px;font-size:12px;
+  transform:translateY(60px);opacity:0;transition:all .3s;z-index:200;
+}
+.toast.show{transform:translateY(0);opacity:1}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-bg"></div>
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-mark">📞</div>
+      <div>
+        <div class="login-logo-text">ReceptAI</div>
+        <div class="login-logo-sub">by Adroit Associates</div>
+      </div>
+    </div>
+    <div class="login-title">Welcome back</div>
+    <div class="login-sub">Sign in to your receptionist dashboard</div>
+
+    <div class="demo-accounts">
+      <div class="demo-label">Demo accounts — click to fill</div>
+      <button class="demo-btn" onclick="fillLogin('admin@adroitassociates.com','demo123','super_admin')">
+        <span>🛡</span>
+        <div>
+          <div style="font-weight:600">Raghu · Adroit Associates</div>
+          <div style="font-size:10px;color:var(--muted)"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5b3a3f3632351b3a3f2934322f3a28283438323a2f3e2875383436">[email&#160;protected]</a></div>
+        </div>
+        <span class="demo-pill pill-sa">Super Admin</span>
+      </button>
+      <button class="demo-btn" onclick="fillLogin('dr.smith@worthingtondental.com','demo123','business_owner')">
+        <span>🦷</span>
+        <div>
+          <div style="font-weight:600">Dr. Smith · Worthington Dental</div>
+          <div style="font-size:10px;color:var(--muted)"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7511075b06181c011d35021a07011d1c1b12011a1b11101b0114195b161a18">[email&#160;protected]</a></div>
+        </div>
+        <span class="demo-pill pill-bo">Business Owner</span>
+      </button>
+      <button class="demo-btn" onclick="fillLogin('sarah@worthingtondental.com','demo123','staff')">
+        <span>👤</span>
+        <div>
+          <div style="font-weight:600">Sarah (Front Desk) · Dental</div>
+          <div style="font-size:10px;color:var(--muted)"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="53203221323b13243c21273b3a3d34273c3d37363d27323f7d303c3e">[email&#160;protected]</a></div>
+        </div>
+        <span class="demo-pill pill-st">Staff</span>
+      </button>
+    </div>
+
+    <div class="form-field">
+      <label>EMAIL</label>
+      <input type="email" id="loginEmail" placeholder="you@business.com">
+    </div>
+    <div class="form-field">
+      <label>PASSWORD</label>
+      <input type="password" id="loginPw" placeholder="••••••••">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign in →</button>
+    <div class="login-error" id="loginError">Invalid credentials. Please try again.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     APP SHELL
+════════════════════════════════════════ -->
+<div id="screen-app" class="screen">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="sb-brand">
+        <div class="sb-mark">📞</div>
+        <div>
+          <div class="sb-brand-name">ReceptAI</div>
+          <div class="sb-brand-tag">by Adroit Associates</div>
+        </div>
+      </div>
+
+      <!-- Active tenant pill (click to switch for super admin) -->
+      <div class="tenant-pill" id="tenantPill" onclick="openTenantSwitcher()">
+        <span class="tenant-emoji" id="tenantEmoji">🦷</span>
+        <span class="tenant-name-text" id="tenantNameText">Worthington Dental</span>
+        <span class="tenant-change" id="tenantChangeHint" style="display:none">Switch ↕</span>
+      </div>
+
+      <!-- Nav injected by JS based on role -->
+      <div id="navGroups"></div>
+    </div>
+
+    <div class="sb-foot">
+      <div class="user-chip">
+        <div class="user-avatar" id="userAvatar"></div>
+        <div class="user-info">
+          <div class="user-name" id="userName"></div>
+          <div class="user-role-label" id="userRoleLabel"></div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">← Sign out</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-area">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="page-title" id="pageTitle">Overview</div>
+        <div class="page-sub" id="pageSub"></div>
+      </div>
+      <div class="topbar-right" id="topbarRight"></div>
+    </div>
+    <div class="content-area" id="contentArea">
+      <!-- panels injected here -->
+    </div>
+  </div>
+</div>
+
+<!-- Tenant Switcher Modal (super admin only) -->
+<div class="modal-overlay" id="tenantSwitcherModal">
+  <div class="modal" style="width:520px">
+    <button class="modal-close" onclick="closeModal('tenantSwitcherModal')">✕</button>
+    <div class="modal-title">Switch Tenant</div>
+    <div class="modal-sub">Select a tenant to view their dashboard</div>
+    <div id="tenantSwitcherList"></div>
+  </div>
+</div>
+
+<!-- Create Tenant Modal -->
+<div class="modal-overlay" id="createTenantModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('createTenantModal')">✕</button>
+    <div class="modal-title">Add New Business</div>
+    <div class="modal-sub">Create a new tenant account and assign a business owner</div>
+    <div class="fgrid" style="margin-bottom:10px">
+      <div class="fgroup"><label>BUSINESS NAME</label><input type="text" class="fcontrol" id="ct-name" placeholder="Worthington Family Dental"></div>
+      <div class="fgroup"><label>SLUG</label><input type="text" class="fcontrol" id="ct-slug" placeholder="worthington-dental"></div>
+      <div class="fgroup"><label>VERTICAL / TYPE</label>
+        <select class="fcontrol" id="ct-vertical">
+          <option value="dental">🦷 Dental</option>
+          <option value="spa">🌿 Spa / Wellness</option>
+          <option value="roofing">🏠 Roofing</option>
+          <option value="bakery">🧁 Bakery</option>
+          <option value="generic">📅 Generic SMB</option>
+        </select>
+      </div>
+      <div class="fgroup"><label>PLAN</label>
+        <select class="fcontrol" id="ct-plan">
+          <option value="starter">Starter (500 calls/mo)</option>
+          <option value="pro">Pro (2000 calls/mo)</option>
+          <option value="enterprise">Enterprise (unlimited)</option>
+        </select>
+      </div>
+      <div class="fgroup"><label>TWILIO PHONE</label><input type="text" class="fcontrol" id="ct-phone" placeholder="+16145550100"></div>
+      <div class="fgroup"><label>PRIMARY COLOR</label><input type="color" class="fcontrol" id="ct-color" value="#5b8dee" style="height:37px;padding:4px"></div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;letter-spacing:.04em">BUSINESS OWNER ACCOUNT</div>
+    <div class="fgrid" style="margin-bottom:14px">
+      <div class="fgroup"><label>OWNER NAME</label><input type="text" class="fcontrol" id="ct-oname" placeholder="Dr. Smith"></div>
+      <div class="fgroup"><label>OWNER EMAIL</label><input type="email" class="fcontrol" id="ct-oemail" placeholder="owner@business.com"></div>
+      <div class="fgroup" style="grid-column:1/-1"><label>TEMP PASSWORD</label><input type="text" class="fcontrol" id="ct-opw" placeholder="Will be emailed to owner"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="createTenant()">Create tenant + owner account</button>
+  </div>
+</div>
+
+<!-- Invite Staff Modal -->
+<div class="modal-overlay" id="inviteModal">
+  <div class="modal" style="width:400px">
+    <button class="modal-close" onclick="closeModal('inviteModal')">✕</button>
+    <div class="modal-title">Invite Team Member</div>
+    <div class="modal-sub" id="inviteModalSub">Invite staff to access this business dashboard</div>
+    <div class="fgroup" style="margin-bottom:10px"><label>NAME</label><input type="text" class="fcontrol" id="inv-name" placeholder="Sarah Jones"></div>
+    <div class="fgroup" style="margin-bottom:10px"><label>EMAIL</label><input type="email" class="fcontrol" id="inv-email" placeholder="sarah@business.com"></div>
+    <div class="fgroup" style="margin-bottom:16px"><label>ROLE</label>
+      <select class="fcontrol" id="inv-role">
+        <option value="staff">Staff — view only (calls, appointments)</option>
+        <option value="business_owner">Business Owner — full access</option>
+      </select>
+    </div>
+    <div style="background:var(--surface2);border-radius:var(--rsm);padding:12px;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:8px;letter-spacing:.04em">ACCESS GRANTED</div>
+      <div id="accessPreview"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="sendInvite()">Send invite email</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ══════════════════════════════════════════════════════════
+// DATA MODEL
+// ══════════════════════════════════════════════════════════
+
+const DEMO_USERS = {
+  'admin@adroitassociates.com':           { password:'demo123', role:'super_admin',    name:'Raghu K.',     tenant_id:null },
+  'dr.smith@worthingtondental.com':       { password:'demo123', role:'business_owner', name:'Dr. Smith',    tenant_id:'t1' },
+  'sarah@worthingtondental.com':          { password:'demo123', role:'staff',          name:'Sarah L.',     tenant_id:'t1' },
+  'owner@serenityspa.com':                { password:'demo123', role:'business_owner', name:'Maya R.',      tenant_id:'t2' },
+  'manager@summitroofing.com':            { password:'demo123', role:'business_owner', name:'James T.',     tenant_id:'t3' },
+};
+
+const TENANTS = {
+  t1: { id:'t1', name:'Worthington Family Dental', slug:'worthington-dental', vertical:'dental', emoji:'🦷', color:'#1a6b8a', active:true, suspended:false, plan:'pro', calls:287, limit:2000, phone:'+16145550191', owner:'dr.smith@worthingtondental.com', users:3 },
+  t2: { id:'t2', name:'Serenity Spa & Wellness',   slug:'serenity-spa',       vertical:'spa',    emoji:'🌿', color:'#6b4c8a', active:true, suspended:false, plan:'starter', calls:112, limit:500, phone:'+16145550292', owner:'owner@serenityspa.com', users:2 },
+  t3: { id:'t3', name:'Summit Roofing & Exteriors', slug:'summit-roofing',    vertical:'roofing',emoji:'🏠', color:'#1a3a5c', active:true, suspended:false, plan:'starter', calls:64,  limit:500, phone:'+16145550393', owner:'manager@summitroofing.com', users:1 },
+  t4: { id:'t4', name:'Sweet Provisions Bakery',    slug:'sweet-provisions',  vertical:'bakery', emoji:'🧁', color:'#8b4513', active:false, suspended:false, plan:'starter', calls:0,   limit:500, phone:'', owner:'', users:0 },
+};
+
+const SAMPLE_CALLS = [
+  {initials:'JM',name:'Jennifer Martinez',phone:'+1 614-555-0234',status:'booked',badge:'b-green',label:'Booked',duration:'2:04',intent:'Book appointment',time:'9:14 AM',ago:'2h ago'},
+  {initials:'RS',name:'Robert Singh',phone:'+1 614-555-0187',status:'rescheduled',badge:'b-amber',label:'Rescheduled',duration:'1:33',intent:'Reschedule',time:'9:52 AM',ago:'1.5h ago'},
+  {initials:'AT',name:'Amanda Torres',phone:'+1 614-555-0341',status:'cancelled',badge:'b-red',label:'Cancelled',duration:'0:58',intent:'Cancel',time:'10:21 AM',ago:'1h ago'},
+  {initials:'?',name:'Unknown caller',phone:'+1 614-555-0098',status:'transferred',badge:'b-gray',label:'Transferred',duration:'0:41',intent:'Transfer',time:'11:05 AM',ago:'40m ago'},
+];
+
+const APPTS = [
+  {time:'9:00 AM', name:'Jennifer Martinez', email:'j.martinez@gmail.com', service:'Routine Cleaning', status:'confirmed', r24:true, r1:false},
+  {time:'10:30 AM',name:'Robert Singh',      email:'r.singh@email.com',    service:'New Patient Exam', status:'reminder',  r24:true, r1:false},
+  {time:'2:00 PM', name:'Michael Kim',       email:'m.kim@email.com',      service:'Consultation',     status:'booking',   r24:false,r1:false},
+];
+
+const TENANT_USERS = {
+  t1: [
+    {name:'Dr. Smith',  email:'dr.smith@worthingtondental.com', role:'business_owner', active:true, last:'10 min ago'},
+    {name:'Sarah L.',   email:'sarah@worthingtondental.com',    role:'staff',          active:true, last:'2h ago'},
+    {name:'Mike D.',    email:'mike@worthingtondental.com',     role:'staff',          active:false, last:'3 days ago'},
+  ],
+  t2: [
+    {name:'Maya R.',    email:'owner@serenityspa.com',          role:'business_owner', active:true, last:'1h ago'},
+    {name:'Lily K.',    email:'lily@serenityspa.com',           role:'staff',          active:true, last:'Yesterday'},
+  ],
+  t3: [
+    {name:'James T.',  email:'manager@summitroofing.com',       role:'business_owner', active:true, last:'30m ago'},
+  ],
+};
+
+const ACCESS_MAP = {
+  staff: [
+    {icon:'☎', label:'View call logs & transcripts', ok:true},
+    {icon:'📅', label:'View appointments',             ok:true},
+    {icon:'🔔', label:'View notification history',     ok:true},
+    {icon:'⚙', label:'Edit business configuration',   ok:false},
+    {icon:'✉', label:'Edit notification templates',   ok:false},
+    {icon:'👥', label:'Manage team members',           ok:false},
+    {icon:'🔑', label:'View API credentials',          ok:false},
+  ],
+  business_owner: [
+    {icon:'☎', label:'View call logs & transcripts', ok:true},
+    {icon:'📅', label:'View & manage appointments',   ok:true},
+    {icon:'🔔', label:'Edit notification templates',  ok:true},
+    {icon:'⚙', label:'Edit business configuration',  ok:true},
+    {icon:'👥', label:'Invite & manage staff',        ok:true},
+    {icon:'🔑', label:'View API credentials',         ok:true},
+    {icon:'💳', label:'Billing & plan management',    ok:false},
+  ],
+};
+
+// ══════════════════════════════════════════════════════════
+// AUTH STATE
+// ══════════════════════════════════════════════════════════
+
+let currentUser = null;
+let currentTenantId = null;
+
+function fillLogin(email, pw, role) {
+  document.getElementById('loginEmail').value = email;
+  document.getElementById('loginPw').value = pw;
+}
+
+function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw    = document.getElementById('loginPw').value;
+  const user  = DEMO_USERS[email];
+  if (!user || user.password !== pw) {
+    document.getElementById('loginError').style.display = 'block';
+    return;
+  }
+  document.getElementById('loginError').style.display = 'none';
+  currentUser = {...user, email};
+  currentTenantId = user.tenant_id || (user.role === 'super_admin' ? 't1' : null);
+  launchApp();
+}
+
+function doLogout() {
+  currentUser = null; currentTenantId = null;
+  document.getElementById('screen-login').classList.add('active');
+  document.getElementById('screen-app').classList.remove('active');
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPw').value = '';
+}
+
+// ══════════════════════════════════════════════════════════
+// APP LAUNCH — role-aware scaffold
+// ══════════════════════════════════════════════════════════
+
+function launchApp() {
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-app').classList.add('active');
+  buildSidebar();
+  buildTopbar();
+  renderDefaultPanel();
+}
+
+function buildSidebar() {
+  const u = currentUser;
+  const t = TENANTS[currentTenantId];
+
+  // Avatar
+  const av = document.getElementById('userAvatar');
+  const initials = u.name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
+  const avatarColors = {super_admin:'rgba(91,141,238,.2)', business_owner:'rgba(62,207,142,.2)', staff:'rgba(245,166,35,.2)'};
+  const textColors   = {super_admin:'var(--accent)', business_owner:'var(--green)', staff:'var(--amber)'};
+  av.style.background = avatarColors[u.role];
+  av.style.color      = textColors[u.role];
+  av.textContent      = initials;
+  document.getElementById('userName').textContent = u.name;
+  document.getElementById('userRoleLabel').textContent = {super_admin:'Super Admin',business_owner:'Business Owner',staff:'Staff'}[u.role];
+
+  // Tenant pill
+  if (t) {
+    document.getElementById('tenantEmoji').textContent = t.emoji;
+    document.getElementById('tenantNameText').textContent = t.name;
+  }
+  if (u.role === 'super_admin') {
+    document.getElementById('tenantChangeHint').style.display = 'inline';
+  }
+
+  // Nav
+  const nav = document.getElementById('navGroups');
+  nav.innerHTML = '';
+
+  const navDefs = {
+    super_admin: [
+      { label:'Platform', items:[
+        {icon:'◉', id:'platform-overview', label:'Platform Overview'},
+        {icon:'🏢', id:'tenants',           label:'All Businesses', badge:'4'},
+        {icon:'👥', id:'all-users',         label:'All Users'},
+        {icon:'📋', id:'audit-log',         label:'Audit Log'},
+      ]},
+      { label:'Active Tenant', items:[
+        {icon:'☎', id:'calls',         label:'Call Logs', badge:'live'},
+        {icon:'📅', id:'appointments',  label:'Appointments'},
+        {icon:'🔔', id:'notifications', label:'Notifications'},
+        {icon:'⚙', id:'business-setup',label:'Business Setup'},
+        {icon:'✦', id:'ai-settings',   label:'AI Settings'},
+        {icon:'⚡', id:'integrations',  label:'Integrations'},
+      ]},
+    ],
+    business_owner: [
+      { label:'Dashboard', items:[
+        {icon:'◉', id:'tenant-overview', label:'Overview'},
+        {icon:'☎', id:'calls',          label:'Call Logs', badge:'live'},
+        {icon:'📅', id:'appointments',   label:'Appointments'},
+        {icon:'🔔', id:'notifications',  label:'Notifications'},
+      ]},
+      { label:'Manage', items:[
+        {icon:'👥', id:'team',           label:'Team & Access'},
+        {icon:'⚙', id:'business-setup', label:'Business Setup'},
+        {icon:'✦', id:'ai-settings',    label:'AI Settings'},
+        {icon:'⚡', id:'integrations',   label:'Integrations'},
+      ]},
+    ],
+    staff: [
+      { label:'View Only', items:[
+        {icon:'◉', id:'tenant-overview', label:'Overview'},
+        {icon:'☎', id:'calls',          label:'Call Logs', badge:'live'},
+        {icon:'📅', id:'appointments',   label:'Appointments'},
+        {icon:'🔔', id:'notifications',  label:'Notifications'},
+      ]},
+    ],
+  };
+
+  (navDefs[u.role] || []).forEach(group => {
+    const g = document.createElement('div');
+    g.className = 'nav-group';
+    g.innerHTML = `<div class="nav-group-label">${group.label}</div>`;
+    group.items.forEach(item => {
+      const b = document.createElement('button');
+      b.className = 'nav-item';
+      b.dataset.panel = item.id;
+      const badgeHtml = item.badge
+        ? `<span class="nav-badge ${item.badge==='live'?'nav-live':''}">${item.badge==='live'?'● live':item.badge}</span>`
+        : '';
+      b.innerHTML = `<span class="nav-icon">${item.icon}</span>${item.label}${badgeHtml}`;
+      b.onclick = () => showPanel(item.id, b);
+      g.appendChild(b);
+    });
+    nav.appendChild(g);
+  });
+}
+
+function buildTopbar() {
+  const t = TENANTS[currentTenantId];
+  const right = document.getElementById('topbarRight');
+  if (currentUser.role !== 'staff') {
+    right.innerHTML = `
+      <span class="badge b-live" style="font-size:11px;padding:3px 9px">● 1 Active Call</span>
+      <button class="btn btn-sm" onclick="showPanel('calls',null)">Monitor</button>
+      ${currentUser.role !== 'staff' ? '<button class="btn btn-primary btn-sm" onclick="openModal(\'inviteModal\')">+ Invite User</button>' : ''}
+    `;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// PANEL ROUTER
+// ══════════════════════════════════════════════════════════
+
+function showPanel(id, navEl) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+  else {
+    const match = document.querySelector(`.nav-item[data-panel="${id}"]`);
+    if (match) match.classList.add('active');
+  }
+
+  const titles = {
+    'platform-overview':'Platform Overview','tenants':'All Businesses',
+    'all-users':'All Users','audit-log':'Audit Log',
+    'tenant-overview':'Overview','calls':'Call Logs',
+    'appointments':'Appointments','notifications':'Notifications',
+    'team':'Team & Access','business-setup':'Business Setup',
+    'ai-settings':'AI Settings','integrations':'Integrations',
+  };
+
+  const t = TENANTS[currentTenantId];
+  document.getElementById('pageTitle').textContent = titles[id] || id;
+  document.getElementById('pageSub').textContent = t ? `${t.name} · ${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}` : '';
+
+  const ca = document.getElementById('contentArea');
+  ca.innerHTML = '';
+
+  // Staff guard
+  const staffBlocked = ['business-setup','ai-settings','integrations','team','tenants','platform-overview','all-users','audit-log'];
+  if (currentUser.role === 'staff' && staffBlocked.includes(id)) {
+    ca.innerHTML = `<div style="text-align:center;padding:60px 20px">
+      <div style="font-size:40px;margin-bottom:16px">🔒</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px">Access Restricted</div>
+      <div style="font-size:13px;color:var(--muted)">This section requires Business Owner or higher access.<br>Contact your administrator to request access.</div>
+    </div>`;
+    return;
+  }
+
+  const renderers = {
+    'platform-overview': renderPlatformOverview,
+    'tenants':           renderTenantsPanel,
+    'all-users':         renderAllUsers,
+    'audit-log':         renderAuditLog,
+    'tenant-overview':   renderTenantOverview,
+    'calls':             renderCalls,
+    'appointments':      renderAppointments,
+    'notifications':     renderNotifications,
+    'team':              renderTeamPanel,
+    'business-setup':    renderBusinessSetup,
+    'ai-settings':       renderAISettings,
+    'integrations':      renderIntegrations,
+  };
+
+  (renderers[id] || (() => { ca.innerHTML = `<p style="color:var(--muted)">Panel "${id}" coming soon.</p>`; }))();
+}
+
+function renderDefaultPanel() {
+  if (currentUser.role === 'super_admin') showPanel('platform-overview', null);
+  else showPanel('tenant-overview', null);
+}
+
+// ══════════════════════════════════════════════════════════
+// SUPER ADMIN PANELS
+// ══════════════════════════════════════════════════════════
+
+function renderPlatformOverview() {
+  const ca = document.getElementById('contentArea');
+  const totalCalls = Object.values(TENANTS).reduce((s,t) => s + t.calls, 0);
+  ca.innerHTML = `
+    <div class="metrics-row" style="grid-template-columns:repeat(4,1fr)">
+      <div class="metric-card"><div class="metric-label">Total Tenants</div><div class="metric-val" style="color:var(--accent)">${Object.keys(TENANTS).length}</div><div class="metric-sub">3 active · 1 pending</div></div>
+      <div class="metric-card"><div class="metric-label">Total Users</div><div class="metric-val" style="color:var(--green)">6</div><div class="metric-sub">Across all businesses</div></div>
+      <div class="metric-card"><div class="metric-label">Calls This Month</div><div class="metric-val">${totalCalls}</div><div class="metric-sub">All tenants combined</div></div>
+      <div class="metric-card"><div class="metric-label">Active Calls</div><div class="metric-val" style="color:var(--green)">1</div><div class="metric-sub">● Live right now</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Business Tenants</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('createTenantModal')">+ Add Business</button>
+      </div>
+      <div class="tenant-grid" id="tenantGridPO"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-title">Recent Audit Events</div><button class="btn btn-sm btn-ghost" onclick="showPanel('audit-log',null)">View all</button></div>
+      ${auditRows()}
+    </div>
+  `;
+  renderTenantCards('tenantGridPO');
+}
+
+function renderTenantsPanel() {
+  const ca = document.getElementById('contentArea');
+  ca.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:13px;color:var(--muted)">${Object.keys(TENANTS).length} businesses registered on the platform</div>
+      <button class="btn btn-primary btn-sm" onclick="openModal('createTenantModal')">+ Add Business</button>
+    </div>
+    <div class="tenant-grid" id="tenantGridAll"></div>
+  `;
+  renderTenantCards('tenantGridAll');
+}
+
+function renderTenantCards(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = Object.values(TENANTS).map(t => `
+    <div class="t-card ${t.suspended?'suspended':''}">
+      <div class="t-card-top">
+        <div class="t-emoji">${t.emoji}</div>
+        <div style="flex:1;min-width:0">
+          <div class="t-name">${t.name}</div>
+          <div class="t-slug">${t.slug}</div>
+        </div>
+        <span class="badge ${t.suspended?'b-red':t.active?'b-green':'b-gray'}">${t.suspended?'Suspended':t.active?'Active':'Inactive'}</span>
+      </div>
+      <div class="t-stats">
+        <span class="t-stat">Vertical: <span>${t.vertical}</span></span>
+        <span class="t-stat">Plan: <span>${t.plan}</span></span>
+        <span class="t-stat">Calls: <span>${t.calls}/${t.limit}</span></span>
+        <span class="t-stat">Users: <span>${t.users}</span></span>
+      </div>
+      <div class="t-actions">
+        <button class="btn btn-xs" onclick="switchActiveTenant('${t.id}')">View dashboard ↗</button>
+        ${t.suspended
+          ? `<button class="btn btn-xs" onclick="toggleSuspend('${t.id}',false)">Reactivate</button>`
+          : `<button class="btn btn-xs btn-danger" onclick="toggleSuspend('${t.id}',true)">Suspend</button>`}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderAllUsers() {
+  const ca = document.getElementById('contentArea');
+  const allUsers = Object.entries(TENANT_USERS).flatMap(([tid, users]) =>
+    users.map(u => ({...u, tenant: TENANTS[tid]?.name || 'N/A', tenantId: tid}))
+  );
+  ca.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">All Platform Users</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('inviteModal')">+ Invite User</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Tenant</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${allUsers.map(u => `
+              <tr>
+                <td style="font-weight:500">${u.name}</td>
+                <td style="color:var(--muted);font-family:var(--mono);font-size:11px">${u.email}</td>
+                <td><span class="role-chip ${u.role==='business_owner'?'role-bo':u.role==='staff'?'role-st':'role-sa'}">${u.role==='business_owner'?'Owner':u.role==='staff'?'Staff':'Super Admin'}</span></td>
+                <td style="font-size:11px">${u.tenant}</td>
+                <td><span class="badge ${u.active?'b-green':'b-gray'}">${u.active?'Active':'Inactive'}</span></td>
+                <td style="color:var(--muted);font-size:11px">${u.last}</td>
+                <td><button class="btn btn-xs btn-danger" onclick="toast('User deactivated')">Deactivate</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderAuditLog() {
+  const ca = document.getElementById('contentArea');
+  ca.innerHTML = `<div class="card"><div class="card-head"><div class="card-title">Audit Trail</div></div>${auditRows(20)}</div>`;
+}
+
+function auditRows(limit=5) {
+  const events = [
+    {time:'2m ago',  user:'Raghu K.',    role:'super_admin',    action:'tenant.create',    detail:'Created Worthington Family Dental',  tenant:'—'},
+    {time:'1h ago',  user:'Dr. Smith',   role:'business_owner', action:'config.update',    detail:'Updated AI greeting script',          tenant:'Worthington Dental'},
+    {time:'2h ago',  user:'Raghu K.',    role:'super_admin',    action:'user.invite',      detail:'Invited sarah@worthingtondental.com', tenant:'Worthington Dental'},
+    {time:'3h ago',  user:'Sarah L.',',  role:'staff',          action:'call.view',        detail:'Viewed transcript #2847',             tenant:'Worthington Dental'},
+    {time:'Yesterday',user:'Raghu K.',   role:'super_admin',    action:'tenant.suspend',   detail:'Suspended Sweet Provisions Bakery',   tenant:'Sweet Provisions'},
+    {time:'Yesterday',user:'Maya R.',    role:'business_owner', action:'config.update',    detail:'Updated SMS reminder template',        tenant:'Serenity Spa'},
+  ].slice(0, limit);
+  return `<div class="tbl-wrap"><table>
+    <thead><tr><th>Time</th><th>User</th><th>Role</th><th>Action</th><th>Detail</th><th>Tenant</th></tr></thead>
+    <tbody>
+      ${events.map(e => `<tr>
+        <td style="color:var(--muted);font-size:11px;white-space:nowrap">${e.time}</td>
+        <td style="font-weight:500;font-size:12px">${e.user}</td>
+        <td><span class="role-chip ${e.role==='business_owner'?'role-bo':e.role==='staff'?'role-st':'role-sa'}">${e.role==='business_owner'?'Owner':e.role==='staff'?'Staff':'Admin'}</span></td>
+        <td><code style="font-family:var(--mono);font-size:10px;color:var(--accent)">${e.action}</code></td>
+        <td style="font-size:11px;color:var(--muted)">${e.detail}</td>
+        <td style="font-size:11px">${e.tenant}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// BUSINESS / TENANT PANELS (shared by all roles)
+// ══════════════════════════════════════════════════════════
+
+function renderTenantOverview() {
+  const t = TENANTS[currentTenantId];
+  const ca = document.getElementById('contentArea');
+  const isReadOnly = currentUser.role === 'staff';
+  ca.innerHTML = `
+    ${isReadOnly ? `<div style="background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.2);border-radius:var(--rsm);padding:9px 14px;font-size:12px;color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:8px">
+      👁 You are viewing in <strong>read-only</strong> mode. Contact your administrator to make changes.
+    </div>` : ''}
+    <div class="metrics-row">
+      <div class="metric-card"><div class="metric-label">Calls Today</div><div class="metric-val" style="color:var(--accent)">23</div><div class="metric-sub">↑ 4 vs yesterday</div></div>
+      <div class="metric-card"><div class="metric-label">Booked</div><div class="metric-val" style="color:var(--green)">14</div><div class="metric-sub">60.8% conversion</div></div>
+      <div class="metric-card"><div class="metric-label">Avg Duration</div><div class="metric-val">1:47</div><div class="metric-sub">↓ 12s vs last week</div></div>
+      <div class="metric-card"><div class="metric-label">Plan Usage</div><div class="metric-val">${t.calls}<span style="font-size:14px;color:var(--muted)">/${t.limit}</span></div><div class="metric-sub">${Math.round(t.calls/t.limit*100)}% of ${t.plan} plan</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Active Call</div><span class="badge b-live">● Live</span></div>
+        <div style="background:rgba(62,207,142,.05);border:1px solid rgba(62,207,142,.12);border-radius:var(--rsm);padding:12px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(62,207,142,.15);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">MK</div>
+            <div>
+              <div style="font-weight:600;font-size:12px">Michael Kim</div>
+              <div style="font-size:10px;color:var(--muted)">+1 614-555-0456 · 0:41 elapsed</div>
+            </div>
+            <div style="margin-left:auto" class="wave">
+              <div class="wb" style="animation-delay:0s"></div><div class="wb" style="animation-delay:.1s"></div>
+              <div class="wb" style="animation-delay:.2s"></div><div class="wb" style="animation-delay:.05s"></div>
+            </div>
+          </div>
+          <div style="background:var(--surface2);border-radius:var(--rsm);padding:8px;font-size:11px;color:var(--muted)">
+            <span style="color:var(--accent);font-weight:500">${TENANTS[currentTenantId]?.emoji || ''} ${getTenantAIName()}:</span> "I have Tuesday March 25th at 10 AM or 2 PM available. Which works for you?"
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Today's Intent Breakdown</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          ${[['Bookings','14','b-green'],['Reschedules','4','b-amber'],['Cancellations','3','b-red'],['Transferred','2','b-gray']].map(([l,v,b]) =>
+            `<div style="background:var(--surface2);border-radius:var(--rsm);padding:10px;text-align:center">
+              <div style="font-size:20px;font-weight:600;margin-bottom:3px"><span class="badge ${b}" style="font-size:16px;padding:0">${v}</span></div>
+              <div style="font-size:10px;color:var(--muted)">${l}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Recent Calls</div><button class="btn btn-sm btn-ghost" onclick="showPanel('calls',null)">View all</button></div>
+      ${renderCallRows(SAMPLE_CALLS.slice(0,3), isReadOnly)}
+    </div>
+  `;
+}
+
+function getTenantAIName() {
+  const t = TENANTS[currentTenantId];
+  const names = {dental:'Aria',spa:'Luna',roofing:'Max',bakery:'Rosie',generic:'Alex'};
+  return names[t?.vertical] || 'AI';
+}
+
+function renderCalls() {
+  const ca = document.getElementById('contentArea');
+  const isReadOnly = currentUser.role === 'staff';
+  ca.innerHTML = `
+    ${isReadOnly ? `<div style="background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.2);border-radius:var(--rsm);padding:8px 14px;font-size:11px;color:var(--amber);margin-bottom:14px">👁 Read-only view</div>` : ''}
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">All Calls — Today</div>
+        <div style="display:flex;gap:6px">
+          <select class="btn btn-sm" style="background:var(--surface2);color:var(--text)"><option>All intents</option><option>Book</option><option>Reschedule</option><option>Cancel</option></select>
+          <button class="btn btn-sm">Export CSV</button>
+        </div>
+      </div>
+      ${renderCallRows(SAMPLE_CALLS, isReadOnly)}
+    </div>
+  `;
+}
+
+function renderCallRows(calls, readOnly=false) {
+  return calls.map(c => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:32px;height:32px;border-radius:50%;background:rgba(91,141,238,.12);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">${c.initials}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px">${c.name} <span class="badge ${c.badge}">${c.label}</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${c.phone} · ${c.duration} · ${c.intent}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--muted)">${c.time}</div>
+        <button class="btn btn-xs btn-ghost" style="margin-top:4px" onclick="toast('Transcript loaded')">Transcript</button>
+      </div>
+    </div>
+  `).join('') + '<div style="border-bottom:none"></div>';
+}
+
+function renderAppointments() {
+  const ca = document.getElementById('contentArea');
+  const isReadOnly = currentUser.role === 'staff';
+  ca.innerHTML = `
+    ${isReadOnly ? `<div style="background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.2);border-radius:var(--rsm);padding:8px 14px;font-size:11px;color:var(--amber);margin-bottom:14px">👁 Read-only view — cancellation and rescheduling requires Business Owner access</div>` : ''}
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Today — March 24, 2026</div>
+        ${!isReadOnly ? `<button class="btn btn-primary btn-sm">+ Add appointment</button>` : ''}
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Time</th><th>Customer</th><th>Service</th><th>Status</th><th>Reminders</th>${!isReadOnly?'<th>Actions</th>':''}</tr></thead>
+        <tbody>
+          ${APPTS.map(a => `<tr>
+            <td style="font-weight:600;font-family:var(--mono);font-size:11px">${a.time}</td>
+            <td><div style="font-weight:500;font-size:12px">${a.name}</div><div style="font-size:10px;color:var(--muted)">${a.email}</div></td>
+            <td style="font-size:12px">${a.service}</td>
+            <td><span class="badge ${a.status==='confirmed'?'b-green':a.status==='reminder'?'b-amber':'b-blue'}">${a.status==='confirmed'?'Confirmed':a.status==='reminder'?'Reminder sent':'Booking now'}</span></td>
+            <td><span style="font-size:10px;margin-right:6px">${a.r24?'✅ 24h':'⏳ 24h'}</span><span style="font-size:10px">${a.r1?'✅ 1h':'⏳ 1h'}</span></td>
+            ${!isReadOnly?`<td><button class="btn btn-xs btn-ghost" onclick="toast('Reschedule flow opened')">Reschedule</button> <button class="btn btn-xs btn-danger" onclick="toast('Appointment cancelled')">Cancel</button></td>`:''}
+          </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>
+  `;
+}
+
+function renderNotifications() {
+  const isReadOnly = currentUser.role === 'staff';
+  const ca = document.getElementById('contentArea');
+  if (isReadOnly) {
+    ca.innerHTML = `<div style="text-align:center;padding:60px 20px">
+      <div style="font-size:40px;margin-bottom:16px">🔒</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px">Access Restricted</div>
+      <div style="font-size:13px;color:var(--muted)">Notification templates require Business Owner access.</div>
+    </div>`;
+    return;
+  }
+  ca.innerHTML = `
+    <div class="card">
+      <div class="card-head"><div class="card-title">SMS Templates</div><span class="badge b-green">Twilio</span></div>
+      <div class="fgroup" style="margin-bottom:10px"><label>BOOKING CONFIRMATION</label><textarea class="fcontrol">Hi {name}! Your appointment is confirmed for {date} at {time}. Reply CANCEL to cancel.</textarea></div>
+      <div class="fgroup" style="margin-bottom:10px"><label>24H REMINDER</label><textarea class="fcontrol">Hi {name}, reminder: your {service} is tomorrow at {time}. Reply CONFIRM or CANCEL.</textarea></div>
+      <div class="fgroup" style="margin-bottom:12px"><label>CANCELLATION</label><textarea class="fcontrol">Hi {name}, your appointment on {date} has been cancelled. Call us to rebook.</textarea></div>
+      <button class="btn btn-primary btn-sm" onclick="toast('Templates saved')">Save SMS templates</button>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Reminder Schedule</div></div>
+      <div class="tog-row"><div><div class="tog-title">Send 24h SMS reminder</div><div class="tog-desc">Auto-sent 24 hours before appointment</div></div><label class="sw"><input type="checkbox" checked><span class="sw-track"></span></label></div>
+      <div class="tog-row"><div><div class="tog-title">Send 1h SMS reminder</div><div class="tog-desc">Auto-sent 1 hour before appointment</div></div><label class="sw"><input type="checkbox" checked><span class="sw-track"></span></label></div>
+      <div class="tog-row"><div><div class="tog-title">Post-appointment follow-up</div><div class="tog-desc">Send feedback request 2h after</div></div><label class="sw"><input type="checkbox"><span class="sw-track"></span></label></div>
+    </div>
+  `;
+}
+
+function renderTeamPanel() {
+  const ca = document.getElementById('contentArea');
+  const users = TENANT_USERS[currentTenantId] || [];
+  ca.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title">Team Members</div><div class="card-sub">${users.length} users with access to this business</div></div>
+        <button class="btn btn-primary btn-sm" onclick="openInviteModal()">+ Invite member</button>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Access Level</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${users.map(u => `<tr>
+            <td style="font-weight:500">${u.name}</td>
+            <td style="color:var(--muted);font-family:var(--mono);font-size:11px">${u.email}</td>
+            <td><span class="role-chip ${u.role==='business_owner'?'role-bo':'role-st'}">${u.role==='business_owner'?'Owner':'Staff'}</span></td>
+            <td style="font-size:11px;color:var(--muted)">${u.role==='business_owner'?'Full access':'View only (calls, appts)'}</td>
+            <td style="font-size:11px;color:var(--muted)">${u.last}</td>
+            <td><span class="badge ${u.active?'b-green':'b-gray'}">${u.active?'Active':'Inactive'}</span></td>
+            <td>
+              <button class="btn btn-xs btn-ghost" onclick="toast('Role updated')">Edit role</button>
+              <button class="btn btn-xs btn-danger" onclick="toast('User removed')">Remove</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Role Permissions</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--amber);margin-bottom:8px;letter-spacing:.04em">STAFF — VIEW ONLY</div>
+          ${ACCESS_MAP.staff.map(a => `<div class="access-row"><span class="access-icon">${a.icon}</span><span class="access-label">${a.label}</span><span class="${a.ok?'access-check':'access-cross'}">${a.ok?'✓':'✗'}</span></div>`).join('')}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px;letter-spacing:.04em">BUSINESS OWNER — FULL ACCESS</div>
+          ${ACCESS_MAP.business_owner.map(a => `<div class="access-row"><span class="access-icon">${a.icon}</span><span class="access-label">${a.label}</span><span class="${a.ok?'access-check':'access-cross'}">${a.ok?'✓':'✗'}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderBusinessSetup() {
+  const t = TENANTS[currentTenantId];
+  const ca = document.getElementById('contentArea');
+  ca.innerHTML = `
+    <div class="card">
+      <div class="card-head"><div class="card-title">Business Details</div></div>
+      <div class="fgrid" style="margin-bottom:12px">
+        <div class="fgroup"><label>BUSINESS NAME</label><input type="text" class="fcontrol" value="${t.name}"></div>
+        <div class="fgroup"><label>TWILIO PHONE</label><input type="text" class="fcontrol" value="${t.phone}"></div>
+        <div class="fgroup"><label>VERTICAL TYPE</label><input type="text" class="fcontrol" value="${t.vertical}" readonly style="opacity:.6"></div>
+        <div class="fgroup"><label>PLAN</label><input type="text" class="fcontrol" value="${t.plan}" readonly style="opacity:.6"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="toast('Changes saved')">Save details</button>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Business Hours</div></div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
+        ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d,i) => {
+          const hours = {0:'8–5',1:'8–5',2:'8–5',3:'8–5',4:'8–2',5:'—',6:'—'};
+          return `<div style="background:var(--surface2);border-radius:var(--rsm);padding:8px 6px;text-align:center">
+            <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px">${d}</div>
+            <div style="font-size:11px;color:${hours[i]==='—'?'var(--dim)':'var(--text)'}">${hours[i]}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderAISettings() {
+  const t = TENANTS[currentTenantId];
+  const names = {dental:'Aria',spa:'Luna',roofing:'Max',bakery:'Rosie',generic:'Alex'};
+  const aiName = names[t?.vertical] || 'Alex';
+  const ca = document.getElementById('contentArea');
+  ca.innerHTML = `
+    <div class="card">
+      <div class="card-head"><div class="card-title">AI Persona</div></div>
+      <div class="fgrid" style="margin-bottom:12px">
+        <div class="fgroup"><label>RECEPTIONIST NAME</label><input type="text" class="fcontrol" value="${aiName}"></div>
+        <div class="fgroup"><label>VOICE</label><select class="fcontrol"><option>Polly.Joanna (Female, US)</option><option>Polly.Matthew (Male, US)</option></select></div>
+      </div>
+      <div class="fgroup" style="margin-bottom:12px"><label>GREETING SCRIPT</label><textarea class="fcontrol" rows="3">Thank you for calling ${t.name}. I'm ${aiName}, your virtual assistant. How can I help you today?</textarea></div>
+      <button class="btn btn-primary btn-sm" onclick="toast('AI settings saved')">Save settings</button>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Routing Rules</div></div>
+      <div class="tog-row"><div><div class="tog-title">Auto-book without approval</div><div class="tog-desc">Book directly into Calendly when slot confirmed</div></div><label class="sw"><input type="checkbox" checked><span class="sw-track"></span></label></div>
+      <div class="tog-row"><div><div class="tog-title">Escalate after 3 failed attempts</div><div class="tog-desc">Transfer to human if AI cannot resolve</div></div><label class="sw"><input type="checkbox" checked><span class="sw-track"></span></label></div>
+      <div class="tog-row"><div><div class="tog-title">After-hours voicemail</div></div><label class="sw"><input type="checkbox" checked><span class="sw-track"></span></label></div>
+    </div>
+  `;
+}
+
+function renderIntegrations() {
+  const ca = document.getElementById('contentArea');
+  ca.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      ${[
+        {name:'Twilio',sub:'Voice + SMS',badge:'b-green',status:'Connected'},
+        {name:'Calendly',sub:'Booking & availability',badge:'b-green',status:'Connected'},
+        {name:'SendGrid',sub:'Email notifications',badge:'b-green',status:'Connected'},
+        {name:'Claude AI',sub:'Conversation engine',badge:'b-green',status:'Connected'},
+      ].map(i => `
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head">
+            <div><div class="card-title">${i.name}</div><div class="card-sub">${i.sub}</div></div>
+            <span class="badge ${i.badge}">${i.status}</span>
+          </div>
+          <div class="fgroup" style="margin-bottom:10px"><label>API KEY</label><input type="password" class="fcontrol" value="••••••••••••••••"></div>
+          <button class="btn btn-sm" onclick="toast('Connection verified ✓')">Test connection</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════
+// TENANT SWITCHER (super admin)
+// ══════════════════════════════════════════════════════════
+
+function openTenantSwitcher() {
+  if (currentUser.role !== 'super_admin') return;
+  const list = document.getElementById('tenantSwitcherList');
+  list.innerHTML = Object.values(TENANTS).map(t => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rsm);cursor:pointer;border:1px solid ${t.id===currentTenantId?'var(--accent)':'var(--border)'};background:${t.id===currentTenantId?'rgba(91,141,238,.08)':'transparent'};margin-bottom:6px;transition:border-color .12s" onclick="switchActiveTenant('${t.id}')">
+      <span style="font-size:20px">${t.emoji}</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${t.name}</div>
+        <div style="font-size:10px;color:var(--muted)">${t.vertical} · ${t.plan} · ${t.calls} calls</div>
+      </div>
+      <span class="badge ${t.suspended?'b-red':t.active?'b-green':'b-gray'}">${t.suspended?'Suspended':t.active?'Active':'Inactive'}</span>
+      ${t.id===currentTenantId?`<span style="font-size:11px;color:var(--accent)">● active</span>`:''}
+    </div>
+  `).join('');
+  openModal('tenantSwitcherModal');
+}
+
+function switchActiveTenant(tid) {
+  currentTenantId = tid;
+  const t = TENANTS[tid];
+  document.getElementById('tenantEmoji').textContent = t.emoji;
+  document.getElementById('tenantNameText').textContent = t.name;
+  closeModal('tenantSwitcherModal');
+  renderDefaultPanel();
+  toast(`Switched to ${t.name}`);
+}
+
+function toggleSuspend(tid, suspend) {
+  TENANTS[tid].suspended = suspend;
+  TENANTS[tid].active = !suspend;
+  showPanel('tenants', null);
+  toast(suspend ? 'Tenant suspended' : 'Tenant reactivated');
+}
+
+// ══════════════════════════════════════════════════════════
+// MODALS & INVITE
+// ══════════════════════════════════════════════════════════
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function openInviteModal() {
+  const t = TENANTS[currentTenantId];
+  document.getElementById('inviteModalSub').textContent = `Invite team member to ${t.name}`;
+  updateAccessPreview('staff');
+  openModal('inviteModal');
+}
+
+document.addEventListener('change', e => {
+  if (e.target.id === 'inv-role') updateAccessPreview(e.target.value);
+});
+
+function updateAccessPreview(role) {
+  const map = ACCESS_MAP[role] || ACCESS_MAP.staff;
+  document.getElementById('accessPreview').innerHTML = map.map(a =>
+    `<div class="access-row"><span class="access-icon">${a.icon}</span><span class="access-label" style="font-size:11px">${a.label}</span><span class="${a.ok?'access-check':'access-cross'}">${a.ok?'✓':'✗'}</span></div>`
+  ).join('');
+}
+
+function sendInvite() {
+  const email = document.getElementById('inv-email').value;
+  if (!email) return;
+  closeModal('inviteModal');
+  toast(`Invite sent to ${email}`);
+  document.getElementById('inv-email').value = '';
+  document.getElementById('inv-name').value = '';
+}
+
+function createTenant() {
+  const name = document.getElementById('ct-name').value;
+  if (!name) return;
+  closeModal('createTenantModal');
+  toast(`Tenant "${name}" created successfully`);
+}
+
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ═════════════════════�
