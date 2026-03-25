@@ -1,6 +1,6 @@
 """
 Twilio Call Handler Router
-Inbound calls → TwiML greeting → STT → Claude → TTS → loop
+Inbound calls -> TwiML greeting -> STT -> Claude -> TTS -> loop
 """
 
 import uuid
@@ -11,7 +11,7 @@ from twilio.twiml.voice_response import VoiceResponse, Gather
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update as sql_update
 
-from backend.settings import get_settings
+from backend.config import get_settings
 from backend.verticals import get_vertical
 from backend.services.database import get_db
 from backend.models_tenant import (
@@ -50,14 +50,18 @@ def make_gather(speech: str, action_url: str, vertical: dict, timeout: int = 5) 
     return str(vr)
 
 
-async def _get_tenant_for_phone(phone: str, db: AsyncSession) -> Tenant | None:
+async def _get_tenant_for_phone(phone: str, db: AsyncSession):
     """Look up which tenant owns this Twilio phone number."""
-    result = await db.execute(
-        select(Tenant)
-        .where(Tenant.twilio_phone_number == phone)
-        .where(Tenant.is_active == True)
-    )
-    return result.scalar_one_or_none()
+    try:
+        result = await db.execute(
+            select(Tenant)
+            .where(Tenant.twilio_phone_number == phone)
+            .where(Tenant.is_active == True)
+        )
+        return result.scalar_one_or_none()
+    except Exception as e:
+        logger.error(f"Error looking up tenant for phone {phone}: {e}")
+        return None
 
 
 # ── 1. Inbound Call ───────────────────────────────────────
@@ -68,10 +72,10 @@ async def incoming_call(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
-    form     = await request.form()
+    form = await request.form()
     call_sid = form.get("CallSid", "")
-    caller   = form.get("From", "Unknown")
-    called   = form.get("To", "")
+    caller = form.get("From", "Unknown")
+    called = form.get("To", "")
 
     logger.info(f"Inbound call: {call_sid} from {caller} to {called}")
 
@@ -80,56 +84,71 @@ async def incoming_call(
     if not tenant:
         logger.warning(f"No tenant found for number {called} — using default vertical")
         vertical_key = settings.business_type
-        tenant_id    = None
+        tenant_id = None
     else:
         vertical_key = tenant.vertical
-        tenant_id    = tenant.id
+        tenant_id = tenant.id
+        logger.info(f"Tenant found: {tenant.name}")
 
     vertical = get_vertical(vertical_key)
-    call_id  = str(uuid.uuid4())
+    call_id = str(uuid.uuid4())
 
-    # Save call log
-	log = CallLog(
-        id=call_id, call_sid=call_sid,
-        tenant_id=tenant_id if tenant_id else None,
-        caller_number=caller,
-        status=CallStatus.IN_PROGRESS,
-        conversation_history=[],
-    )
-    db.add(log)
-
-    # Upsert customer (only if tenant exists)
-    if tenant_id:
-        res = await db.execute(
-            select(Customer)
-            .where(Customer.phone == caller)
-            .where(Customer.tenant_id == tenant_id)
+    # Save call log — wrapped in try/catch to prevent FK errors from crashing the call
+    try:
+        log = CallLog(
+            id=call_id,
+            call_sid=call_sid,
+            tenant_id=tenant_id,
+            caller_number=caller,
+            status=CallStatus.IN_PROGRESS,
+            conversation_history=[],
         )
-        cust = res.scalar_one_or_none()
-        if not cust:
-            db.add(Customer(id=str(uuid.uuid4()), tenant_id=tenant_id, phone=caller, call_count=1))
-        else:
-            cust.call_count += 1
+        db.add(log)
 
-    await db.commit()
+        # Upsert customer only if tenant exists
+        if tenant_id:
+            res = await db.execute(
+                select(Customer)
+                .where(Customer.phone == caller)
+                .where(Customer.tenant_id == tenant_id)
+            )
+            cust = res.scalar_one_or_none()
+            if not cust:
+                db.add(Customer(
+                    id=str(uuid.uuid4()),
+                    tenant_id=tenant_id,
+                    phone=caller,
+                    call_count=1
+                ))
+            else:
+                cust.call_count += 1
 
-    # Store conversation state
+        await db.commit()
+        logger.info(f"Call log saved: {call_id}")
+    except Exception as e:
+        logger.error(f"DB error saving call log: {e} — continuing with call anyway")
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+
+    # Store conversation state in memory
     active_calls[call_sid] = {
-        "call_id":    call_id,
-        "caller":     caller,
-        "tenant_id":  tenant_id,
-        "vertical":   vertical_key,
-        "history":    [],
+        "call_id": call_id,
+        "caller": caller,
+        "tenant_id": tenant_id,
+        "vertical": vertical_key,
+        "history": [],
         "transcript": "",
-        "caller_info":{"phone": caller},
-        "turn":       0,
+        "caller_info": {"phone": caller},
+        "turn": 0,
     }
 
     action_url = f"{settings.base_url}/calls/respond?call_sid={call_sid}"
     return xml_response(make_gather(vertical["greeting"], action_url, vertical))
 
 
-# ── 2. Conversation Turn ────────────────────────────────
+# ── 2. Conversation Turn ──────────────────────────────────
 
 @router.post("/respond")
 async def respond(
@@ -137,39 +156,45 @@ async def respond(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
-    form         = await request.form()
-    call_sid     = form.get("CallSid", "")
-    speech       = form.get("SpeechResult", "").strip()
-    no_input     = request.query_params.get("no_input", "0") == "1"
+    form = await request.form()
+    call_sid = form.get("CallSid", "")
+    speech = form.get("SpeechResult", "").strip()
+    no_input = request.query_params.get("no_input", "0") == "1"
 
     state = active_calls.get(call_sid)
     if not state:
         vr = VoiceResponse()
-        vr.say("I'm sorry, I lost track of our conversation. Please call back and I'll be happy to help.")
+        vr.say(
+            "I am sorry, I lost track of our conversation. Please call back and I will be happy to help.",
+            voice="Polly.Joanna",
+            language="en-US"
+        )
         vr.hangup()
         return xml_response(str(vr))
 
     vertical_key = state["vertical"]
-    vertical     = get_vertical(vertical_key)
-    action_url   = f"{settings.base_url}/calls/respond?call_sid={call_sid}"
+    vertical = get_vertical(vertical_key)
+    action_url = f"{settings.base_url}/calls/respond?call_sid={call_sid}"
     state["turn"] += 1
 
-    # No input
+    # Handle no input
     if no_input or not speech:
         if state["turn"] > 8:
             return await _end_call(call_sid, "Thank you for calling. Goodbye!", db)
         return xml_response(make_gather(
-            "I didn't catch that. Could you repeat what you'd like to do?",
+            "I did not catch that. Could you repeat what you would like to do?",
             action_url, vertical, timeout=6
         ))
 
     state["transcript"] += f"Caller: {speech}\n"
-    current_time = datetime.now(tz=timezone.utc).strftime("%A, %B %-d %Y at %-I:%M %p UTC")
+    current_time = datetime.now(tz=timezone.utc).strftime("%A, %B %d %Y at %I:%M %p UTC")
 
     async def tool_executor(tool_name, tool_input):
         return await execute_tool(
-            tool_name=tool_name, tool_input=tool_input,
-            call_state=state, db=db,
+            tool_name=tool_name,
+            tool_input=tool_input,
+            call_state=state,
+            db=db,
             vertical_key=vertical_key,
             background_tasks=background_tasks,
         )
@@ -185,17 +210,18 @@ async def respond(
         )
     except Exception as e:
         logger.error(f"Claude error on {call_sid}: {e}")
-        response_text = "I'm having a little trouble right now. Let me connect you with a team member."
+        response_text = "I am having a little trouble right now. Let me connect you with a team member."
         return await _transfer_call(call_sid, response_text, vertical)
 
     state["history"] = updated_history
-    state["transcript"] += f"{vertical.get('receptionist_name','AI')}: {response_text}\n"
+    ai_name = vertical.get("receptionist_name", "AI")
+    state["transcript"] += f"{ai_name}: {response_text}\n"
 
     # Transfer trigger
     if tool_result and tool_result.get("tool") == "transfer_to_human":
         return await _transfer_call(call_sid, response_text, vertical)
 
-    # Detect end-of-call
+    # Detect end-of-call phrases
     end_phrases = ["goodbye", "have a great day", "thank you for calling", "take care", "bye-bye"]
     if any(p in response_text.lower() for p in end_phrases):
         background_tasks.add_task(_finalize_call, call_sid, state)
@@ -215,22 +241,26 @@ async def respond(
 
 @router.post("/status")
 async def call_status(request: Request, db: AsyncSession = Depends(get_db)):
-    form     = await request.form()
+    form = await request.form()
     call_sid = form.get("CallSid", "")
-    status   = form.get("CallStatus", "")
+    status = form.get("CallStatus", "")
     duration = form.get("CallDuration", 0)
 
     logger.info(f"Call {call_sid}: {status} ({duration}s)")
 
-    await db.execute(
-        sql_update(CallLog)
-        .where(CallLog.call_sid == call_sid)
-        .values(
-            duration_seconds=int(duration) if duration else None,
-            status=CallStatus.COMPLETED if status == "completed" else CallStatus.FAILED,
+    try:
+        await db.execute(
+            sql_update(CallLog)
+            .where(CallLog.call_sid == call_sid)
+            .values(
+                duration_seconds=int(duration) if duration else None,
+                status=CallStatus.COMPLETED if status == "completed" else CallStatus.FAILED,
+            )
         )
-    )
-    await db.commit()
+        await db.commit()
+    except Exception as e:
+        logger.error(f"Error updating call status: {e}")
+
     active_calls.pop(call_sid, None)
     return Response(status_code=204)
 
@@ -241,20 +271,23 @@ async def _transfer_call(call_sid: str, announcement: str, vertical: dict) -> Re
     vr = VoiceResponse()
     vr.say(announcement, voice=vertical.get("voice", "Polly.Joanna"), language="en-US")
     vr.say(
-        f"Please hold while I connect you with a team member.",
+        "Please hold while I connect you with a team member.",
         voice=vertical.get("voice", "Polly.Joanna"),
     )
     if settings.transfer_phone_number:
         vr.dial(settings.transfer_phone_number)
     else:
-        vr.say("I'm sorry, no one is available right now. Please call back during business hours.")
+        vr.say(
+            "I am sorry, no one is available right now. Please call back during business hours.",
+            voice=vertical.get("voice", "Polly.Joanna"),
+        )
         vr.hangup()
     active_calls.pop(call_sid, None)
     return xml_response(str(vr))
 
 
 async def _end_call(call_sid: str, final_text: str, db: AsyncSession) -> Response:
-    state   = active_calls.get(call_sid, {})
+    state = active_calls.get(call_sid, {})
     vertical = get_vertical(state.get("vertical", "generic"))
     vr = VoiceResponse()
     vr.say(final_text, voice=vertical.get("voice", "Polly.Joanna"), language="en-US")
@@ -264,20 +297,26 @@ async def _end_call(call_sid: str, final_text: str, db: AsyncSession) -> Respons
 
 
 async def _finalize_call(call_sid: str, state: dict):
-    """Background: persist transcript + classify intent."""
+    """Background: persist transcript and classify intent."""
     from backend.services.database import AsyncSessionLocal
     transcript = state.get("transcript", "")
-    intent     = await classify_intent(transcript)
+    try:
+        intent = await classify_intent(transcript)
+    except Exception:
+        intent = "unknown"
 
-    async with AsyncSessionLocal() as db:
-        await db.execute(
-            sql_update(CallLog)
-            .where(CallLog.call_sid == call_sid)
-            .values(
-                transcript=transcript,
-                conversation_history=state.get("history", []),
-                intent=intent,
-                status=CallStatus.COMPLETED,
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                sql_update(CallLog)
+                .where(CallLog.call_sid == call_sid)
+                .values(
+                    transcript=transcript,
+                    conversation_history=state.get("history", []),
+                    intent=intent,
+                    status=CallStatus.COMPLETED,
+                )
             )
-        )
-        await db.commit()
+            await db.commit()
+    except Exception as e:
+        logger.error(f"Error finalizing call {call_sid}: {e}")
