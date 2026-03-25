@@ -80,7 +80,7 @@ async def incoming_call(
     if not tenant:
         logger.warning(f"No tenant found for number {called} — using default vertical")
         vertical_key = settings.business_type
-        tenant_id    = ""
+        tenant_id    = None
     else:
         vertical_key = tenant.vertical
         tenant_id    = tenant.id
@@ -89,25 +89,27 @@ async def incoming_call(
     call_id  = str(uuid.uuid4())
 
     # Save call log
-    log = CallLog(
+	log = CallLog(
         id=call_id, call_sid=call_sid,
-        tenant_id=tenant_id, caller_number=caller,
+        tenant_id=tenant_id if tenant_id else None,
+        caller_number=caller,
         status=CallStatus.IN_PROGRESS,
         conversation_history=[],
     )
     db.add(log)
 
-    # Upsert customer
-    res = await db.execute(
-        select(Customer)
-        .where(Customer.phone == caller)
-        .where(Customer.tenant_id == tenant_id)
-    )
-    cust = res.scalar_one_or_none()
-    if not cust:
-        db.add(Customer(id=str(uuid.uuid4()), tenant_id=tenant_id, phone=caller, call_count=1))
-    else:
-        cust.call_count += 1
+    # Upsert customer (only if tenant exists)
+    if tenant_id:
+        res = await db.execute(
+            select(Customer)
+            .where(Customer.phone == caller)
+            .where(Customer.tenant_id == tenant_id)
+        )
+        cust = res.scalar_one_or_none()
+        if not cust:
+            db.add(Customer(id=str(uuid.uuid4()), tenant_id=tenant_id, phone=caller, call_count=1))
+        else:
+            cust.call_count += 1
 
     await db.commit()
 

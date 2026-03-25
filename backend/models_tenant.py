@@ -131,7 +131,7 @@ class CallLog(Base):
     __tablename__ = "call_logs"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), index=True)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), index=True, nullable=True)
     call_sid: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     caller_number: Mapped[str] = mapped_column(String(20))
     caller_name: Mapped[str] = mapped_column(String(100), nullable=True)
@@ -153,7 +153,7 @@ class Customer(Base):
     __tablename__ = "customers"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), index=True)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), index=True, nullable=True)
     phone: Mapped[str] = mapped_column(String(20), index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=True)
     email: Mapped[str] = mapped_column(String(200), nullable=True)
