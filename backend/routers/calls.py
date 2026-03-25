@@ -129,7 +129,7 @@ async def incoming_call(
     return xml_response(make_gather(vertical["greeting"], action_url, vertical))
 
 
-# ── 2. Conversation Turn ──────────────────────────────────
+# ── 2. Conversation Turn ────────────────────────────────
 
 @router.post("/respond")
 async def respond(
